@@ -1,3 +1,4 @@
+import { AxiosResponse } from 'axios';
 import { createContext, ReactNode, useContext, useState } from 'react';
 import { toast } from 'react-toastify';
 import { api } from '../services/api';
@@ -35,9 +36,21 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
   const addProduct = async (productId: number) => {
     try {
       // TODO
-      console.log(productId)
-      const response = await api.get(`/products/${productId}`)
-      setCart([...cart, response.data])
+      const filteredProducts = cart.filter(product => product.id === productId)
+      if (filteredProducts.length === 0) {
+        const response = await api.get<Product>(`/products/${productId}`)
+        response.data.amount = 1
+        setCart([...cart, response.data])
+      } else {
+        const tempCart = cart.map((product) => {
+          if (product.id === productId) {
+            product.amount++
+          }
+          return product
+        })
+        setCart(tempCart)
+      }
+      
     } catch {
       // TODO
     }
