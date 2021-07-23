@@ -7,9 +7,14 @@ import { Container, Cart } from './styles';
 import { useCart } from '../../hooks/useCart';
 
 const Header = (): JSX.Element => {
-  // const { cart } = useCart();
-  // const cartSize = // TODO;
-
+  const { cart } = useCart();
+  const cartSize = cart.reduce((acc, curr) => {
+    const arrTemp = acc
+    if(!arrTemp.includes(curr.id)) {
+      arrTemp.push(curr.id)
+    }
+    return arrTemp
+  }, [] as Number[]).length
   return (
     <Container>
       <Link to="/">
@@ -20,7 +25,7 @@ const Header = (): JSX.Element => {
         <div>
           <strong>Meu carrinho</strong>
           <span data-testid="cart-size">
-            {/* {cartSize === 1 ? `${cartSize} item` : `${cartSize} itens`} */}
+            {cartSize === 1 ? `${cartSize} item` : `${cartSize} itens`}
           </span>
         </div>
         <MdShoppingBasket size={36} color="#FFF" />
