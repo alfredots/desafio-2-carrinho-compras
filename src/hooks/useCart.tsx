@@ -59,6 +59,8 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
   const removeProduct = (productId: number) => {
     try {
       // TODO
+      const tempCart = cart.filter(product => productId !== product.id)
+      setCart(tempCart)
     } catch {
       // TODO
     }
@@ -70,6 +72,15 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
   }: UpdateProductAmount) => {
     try {
       // TODO
+      const response = await api.patch<Product>(`/products/${productId}`, {
+        amount
+      })
+      const tempCart = cart.filter(product => productId !== product.id)
+      const sortedCart = [...tempCart, response.data].sort((a,b) => {
+        return a.id > b.id ? 1 : -1  
+      })
+
+      setCart(sortedCart)
     } catch {
       // TODO
     }
