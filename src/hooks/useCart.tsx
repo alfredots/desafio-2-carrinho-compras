@@ -23,6 +23,9 @@ interface CartContextData {
 const CartContext = createContext<CartContextData>({} as CartContextData);
 
 export function CartProvider({ children }: CartProviderProps): JSX.Element {
+  const sortFunction = (a: Product,b: Product) => {
+    return a.id > b.id ? 1 : -1  
+  }
   const [cart, setCart] = useState<Product[]>(() => {
     // const storagedCart = Buscar dados do localStorage
 
@@ -40,7 +43,7 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
       if (filteredProducts.length === 0) {
         const response = await api.get<Product>(`/products/${productId}`)
         response.data.amount = 1
-        setCart([...cart, response.data])
+        setCart([...cart, response.data].sort(sortFunction))
       } else {
         const tempCart = cart.map((product) => {
           if (product.id === productId) {
@@ -48,7 +51,7 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
           }
           return product
         })
-        setCart(tempCart)
+        setCart(tempCart.sort(sortFunction))
       }
       
     } catch {
@@ -76,9 +79,7 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
         amount
       })
       const tempCart = cart.filter(product => productId !== product.id)
-      const sortedCart = [...tempCart, response.data].sort((a,b) => {
-        return a.id > b.id ? 1 : -1  
-      })
+      const sortedCart = [...tempCart, response.data].sort(sortFunction)
 
       setCart(sortedCart)
     } catch {
