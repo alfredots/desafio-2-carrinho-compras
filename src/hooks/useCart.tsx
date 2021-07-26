@@ -1,4 +1,3 @@
-import { AxiosResponse } from 'axios';
 import { createContext, ReactNode, useContext, useState } from 'react';
 import { toast } from 'react-toastify';
 import { api } from '../services/api';
@@ -26,12 +25,17 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
   const sortFunction = (a: Product,b: Product) => {
     return a.id > b.id ? 1 : -1  
   }
-  const [cart, setCart] = useState<Product[]>(() => {
-    // const storagedCart = Buscar dados do localStorage
 
-    // if (storagedCart) {
-    //   return JSON.parse(storagedCart);
-    // }
+  const storeCart = (modifiedCard: Product[]) => {
+    localStorage.setItem('@RocketShoes:cart', JSON.stringify(modifiedCard.sort(sortFunction)))
+  }
+
+  const [cart, setCart] = useState<Product[]>(() => {
+    const storagedCart = localStorage.getItem('@RocketShoes:cart')
+
+    if (storagedCart) {
+      return JSON.parse(storagedCart);
+    }
 
     return [];
   });
@@ -40,17 +44,17 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
     try {
       // TODO
       const filteredProducts = cart.filter(product => product.id === productId)
-      const response = await api.get<Product>(`/products/${productId}`)
       if (filteredProducts.length === 0) {
-        
+        const response = await api.get<Product>(`/products/${productId}`)
         response.data.amount = 1
-        setCart([...cart, response.data].sort(sortFunction))
+        const sortedCart = [...cart, response.data].sort(sortFunction)
+        setCart(sortedCart)
+        storeCart(sortedCart)
       } else {
         // verificar estoque
         const filteredProduct = cart.filter(product => productId === product.id)[0]
         // verificar estoque
         const responseStock = await api.get<Stock>(`/stock/${productId}`)
-        console.log({ stock: responseStock.data.amount,  itemAmount: filteredProduct.amount})
         if(filteredProduct.amount === responseStock.data.amount) {
           toast.error('Quantidade solicitada fora de estoque')
           return
@@ -62,6 +66,7 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
           }
           return product
         })
+        storeCart(tempCart)
         setCart(tempCart.sort(sortFunction))
       }
       
@@ -74,11 +79,16 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
   const removeProduct = (productId: number) => {
     try {
       // TODO
+      const verifyIfProductExists = cart.some(product => product.id === productId)
+      if (!verifyIfProductExists) {
+        throw new Error()
+      }
       const tempCart = cart.filter(product => productId !== product.id)
-      setCart(tempCart)
+      storeCart(tempCart)
+      setCart(tempCart.sort(sortFunction))
     } catch {
       // TODO
-      toast.error('Erro ao remover o produto')
+      toast.error('Erro na remoção do produto')
     }
   };
 
@@ -88,23 +98,23 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
   }: UpdateProductAmount) => {
     try {
       // TODO
+      if (amount <= 0)
+        return
       // verificar estoque
       const responseStock = await api.get<Stock>(`/stock/${productId}`)
       if(amount > responseStock.data.amount) {
         toast.error('Quantidade solicitada fora de estoque')
         return
       }
-      //
-      const response = await api.patch<Product>(`/products/${productId}`, {
-        amount
-      })
       const tempCart = cart.filter(product => productId !== product.id)
-      const sortedCart = [...tempCart, response.data].sort(sortFunction)
-
+      const productModified = cart.filter(product => productId === product.id)[0]
+      productModified.amount = amount
+      const sortedCart = [...tempCart, productModified].sort(sortFunction)
+      storeCart(sortedCart)
       setCart(sortedCart)
     } catch {
       // TODO
-      toast.error('Erro ao atualizar quantidade do produto')
+      toast.error('Erro na alteração de quantidade do produto')
     }
   };
 
